@@ -1,0 +1,80 @@
+{
+  "name": "Material Request Processing Template",
+  "description": "Template for processing material requests with tasks and data objects",
+  "templateType": "Task and Data Object Template",
+  "items": [
+    {
+      "id": "item_001",
+      "name": "Validate Material Request",
+      "type": "task",
+      "sequence": 1,
+      "mandatory": true,
+      "dependency": null,
+      "parallelExecution": false,
+      "estimatedDuration": 30,
+      "assignedTo": "material_analyst",
+      "priority": "High",
+      "notes": "Validate material specifications and requirements"
+    },
+    {
+      "id": "item_002", 
+      "name": "Check Inventory Levels",
+      "type": "task",
+      "sequence": 2,
+      "mandatory": true,
+      "dependency": "item_001",
+      "parallelExecution": false,
+      "estimatedDuration": 15,
+      "assignedTo": "inventory_manager",
+      "priority": "Medium",
+      "notes": "Check current inventory levels for requested materials"
+    },
+    {
+      "id": "item_003",
+      "name": "Material Specifications Form",
+      "type": "dataObject",
+      "sequence": 3,
+      "mandatory": true,
+      "dependency": "item_001",
+      "parallelExecution": true,
+      "estimatedDuration": 20,
+      "assignedTo": "quality_engineer",
+      "priority": "Medium",
+      "notes": "Complete material specifications form",
+      "selectedForm": "form_mat_spec_001",
+      "formId": "form_mat_spec_001",
+      "formName": "Material Specifications Form"
+    },
+    {
+      "id": "item_004",
+      "name": "Approval Workflow",
+      "type": "task",
+      "sequence": 4,
+      "mandatory": true,
+      "dependency": "item_002",
+      "parallelExecution": false,
+      "estimatedDuration": 45,
+      "assignedTo": "department_manager",
+      "priority": "High",
+      "notes": "Process approval workflow for material request"
+    },
+    {
+      "id": "item_005",
+      "name": "Quality Assurance Checklist",
+      "type": "dataObject",
+      "sequence": 5,
+      "mandatory": false,
+      "dependency": "item_003",
+      "parallelExecution": true,
+      "estimatedDuration": 25,
+      "assignedTo": "quality_assurance",
+      "priority": "Medium",
+      "notes": "Complete quality assurance checklist",
+      "selectedForm": "form_qa_checklist_001",
+      "formId": "form_qa_checklist_001",
+      "formName": "Quality Assurance Checklist"
+    }
+  ],
+  "createdBy": "system_admin"
+}
+

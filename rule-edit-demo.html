@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Rule Edit Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .scope-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .scope-option {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .scope-option.active {
+            border-color: #007bff;
+            background-color: #f8f9ff;
+        }
+        
+        .rule-type-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .rule-type-option {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .rule-type-option.active {
+            border-color: #007bff;
+            background-color: #f8f9ff;
+        }
+        
+        .conditions-container,
+        .actions-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .condition-row,
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .condition-row > div,
+        .action-row > div {
+            flex: 1;
+        }
+        
+        .condition-row input,
+        .condition-row select,
+        .action-row input,
+        .action-row select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        .decision-table-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .decision-table-row {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .row-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .row-conditions,
+        .row-actions {
+            margin-bottom: 10px;
+        }
+        
+        .condition-item,
+        .action-item {
+            background-color: #f8f9fa;
+            padding: 5px 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Business Rule Editor</h1>
+            <div>
+                <button class="btn btn-primary" onclick="loadRule()">Load Rule</button>
+                <button class="btn btn-success" onclick="saveRule()">Save Rule</button>
+                <button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+            </div>
+        </div>
+
+        <div id="messageContainer"></div>
+
+        <!-- Rule Configuration -->
+        <div class="form-group">
+            <label for="ruleName">Rule Name *</label>
+            <input type="text" id="ruleName" placeholder="Enter rule name">
+        </div>
+
+        <div class="form-group">
+            <label for="ruleDescription">Description</label>
+            <textarea id="ruleDescription" rows="3" placeholder="Enter rule description"></textarea>
+        </div>
+
+        <!-- Rule Scope -->
+        <div class="form-group">
+            <label>Rule Scope</label>
+            <div class="scope-options">
+                <div class="scope-option" data-scope="generic" onclick="selectScope('generic')">
+                    <h4>Generic Rule</h4>
+                    <p>Applies to all data objects and contexts.</p>
+                </div>
+                <div class="scope-option" data-scope="dataObject" onclick="selectScope('dataObject')">
+                    <h4>Data Object Specific</h4>
+                    <p>Applies to a specific data object type.</p>
+                </div>
+                <div class="scope-option" data-scope="crossObject" onclick="selectScope('crossObject')">
+                    <h4>Cross Object Rule</h4>
+                    <p>Applies across multiple data objects.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule Type -->
+        <div class="form-group">
+            <label>Rule Type</label>
+            <div class="rule-type-options">
+                <div class="rule-type-option" data-rule-type="validation" onclick="selectRuleType('validation')">
+                    <h4>Validation Rule</h4>
+                    <p>Validate data format, required fields, ranges, and cross-field validation.</p>
+                </div>
+                <div class="rule-type-option" data-rule-type="data" onclick="selectRuleType('data')">
+                    <h4>Standardization Rule</h4>
+                    <p>Normalize data format, case, trim whitespace, and unit conversions.</p>
+                </div>
+                <div class="rule-type-option" data-rule-type="business" onclick="selectRuleType('business')">
+                    <h4>Decision Table</h4>
+                    <p>Complex business logic using decision tables for multiple conditions.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Object -->
+        <div class="form-group">
+            <label for="dataObject">Data Object</label>
+            <select id="dataObject">
+                <option value="">Select Data Object</option>
+                <option value="customer">Customer</option>
+                <option value="supplier">Supplier</option>
+                <option value="material">Material</option>
+                <option value="location">Location</option>
+            </select>
+        </div>
+
+        <!-- Conditions -->
+        <div class="form-group">
+            <label>Conditions</label>
+            <div class="conditions-container" id="conditionsContainer">
+                <div class="condition-row">
+                    <div class="condition-field">
+                        <input type="text" placeholder="Field" />
+                    </div>
+                    <div class="condition-operator">
+                        <select>
+                            <option value="equals">Equals</option>
+                            <option value="notEquals">Not Equals</option>
+                            <option value="greaterThan">Greater Than</option>
+                            <option value="lessThan">Less Than</option>
+                            <option value="contains">Contains</option>
+                            <option value="isEmpty">Is Empty</option>
+                            <option value="isNotEmpty">Is Not Empty</option>
+                        </select>
+                    </div>
+                    <div class="condition-value">
+                        <input type="text" placeholder="Value" />
+                    </div>
+                    <div class="condition-logical">
+                        <select>
+                            <option value="AND">AND</option>
+                            <option value="OR">OR</option>
+                            <option value="NOT">NOT</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="button" onclick="removeCondition(this)">Remove</button>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="addCondition()">Add Condition</button>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-group">
+            <label>Actions</label>
+            <div class="actions-container" id="actionsContainer">
+                <div class="action-row">
+                    <div class="action-type">
+                        <select>
+                            <option value="setField">Set Field</option>
+                            <option value="clearField">Clear Field</option>
+                            <option value="showField">Show Field</option>
+                            <option value="hideField">Hide Field</option>
+                            <option value="validate">Validate</option>
+                            <option value="showMessage">Show Message</option>
+                        </select>
+                    </div>
+                    <div class="action-field">
+                        <input type="text" placeholder="Field" />
+                    </div>
+                    <div class="action-value">
+                        <input type="text" placeholder="Value" />
+                    </div>
+                    <div class="action-message">
+                        <input type="text" placeholder="Message" />
+                    </div>
+                    <div>
+                        <button type="button" onclick="removeAction(this)">Remove</button>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="addAction()">Add Action</button>
+        </div>
+
+        <!-- Decision Table -->
+        <div class="form-group">
+            <label>Decision Table</label>
+            <div class="decision-table-container" id="decisionTableContainer">
+                <p>No decision table rows defined.</p>
+            </div>
+            <button class="btn btn-primary" onclick="addDecisionTableRow()">Add Decision Table Row</button>
+        </div>
+
+        <!-- Additional Settings -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="priority">Priority</label>
+                <input type="number" id="priority" value="1" min="1">
+            </div>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status">
+                    <option value="draft">Draft</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="archived">Archived</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="enabled">Enabled</label>
+                <input type="checkbox" id="enabled" checked>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="tags">Tags</label>
+            <input type="text" id="tags" placeholder="Enter tags separated by commas">
+        </div>
+    </div>
+
+    <script>
+        // Business Rule Editor Class
+        class BusinessRuleEditor {
+            constructor() {
+                this.currentRule = null;
+                this.apiBaseUrl = 'http://localhost:3001/api/business-rules';
+            }
+
+            async loadRule(ruleId = '68f92fd8e17843ebd8cac693') {
+                try {
+                    this.showMessage('Loading rule...', 'info');
+                    
+                    const response = await fetch(`${this.apiBaseUrl}/${ruleId}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.populateForm(result.data);
+                        this.currentRule = result.data;
+                        this.showMessage('Rule loaded successfully!', 'success');
+                    } else {
+                        throw new Error(result.message || 'Failed to load rule');
+                    }
+                } catch (error) {
+                    console.error('Error loading rule:', error);
+                    this.showMessage('Error loading rule: ' + error.message, 'error');
+                }
+            }
+
+            populateForm(rule) {
+                console.log('Populating form with rule:', rule);
+                
+                // Basic Information
+                document.getElementById('ruleName').value = rule.name || '';
+                document.getElementById('ruleDescription').value = rule.description || '';
+                
+                // Rule Scope
+                this.selectScope(rule.scope);
+                
+                // Rule Type
+                this.selectRuleType(rule.type);
+                
+                // Data Object
+                document.getElementById('dataObject').value = rule.dataObject || '';
+                
+                // Conditions
+                this.populateConditions(rule.conditions);
+                
+                // Actions
+                this.populateActions(rule.actions);
+                
+                // Decision Table
+                this.populateDecisionTable(rule.decisionTable);
+                
+                // Additional Settings
+                document.getElementById('priority').value = rule.priority || 1;
+                document.getElementById('status').value = rule.status || 'draft';
+                document.getElementById('enabled').checked = rule.enabled || false;
+                document.getElementById('tags').value = (rule.tags || []).join(', ');
+            }
+
+            selectScope(scope) {
+                document.querySelectorAll('.scope-option').forEach(option => {
+                    option.classList.remove('active');
+                });
+                
+                let scopeElement;
+                switch (scope) {
+                    case 'global':
+                        scopeElement = document.querySelector('[data-scope="generic"]');
+                        break;
+                    case 'dataObject':
+                        scopeElement = document.querySelector('[data-scope="dataObject"]');
+                        break;
+                    case 'field':
+                        scopeElement = document.querySelector('[data-scope="crossObject"]');
+                        break;
+                }
+                
+                if (scopeElement) {
+                    scopeElement.classList.add('active');
+                }
+            }
+
+            selectRuleType(type) {
+                document.querySelectorAll('.rule-type-option').forEach(option => {
+                    option.classList.remove('active');
+                });
+                
+                const typeElement = document.querySelector(`[data-rule-type="${type}"]`);
+                if (typeElement) {
+                    typeElement.classList.add('active');
+                }
+            }
+
+            populateConditions(conditions) {
+                const container = document.getElementById('conditionsContainer');
+                container.innerHTML = '';
+                
+                if (conditions && conditions.length > 0) {
+                    conditions.forEach((condition, index) => {
+                        this.addConditionRow(condition, index);
+                    });
+                } else {
+                    this.addConditionRow({}, 0);
+                }
+            }
+
+            addConditionRow(condition = {}, index = 0) {
+                const container = document.getElementById('conditionsContainer');
+                const row = document.createElement('div');
+                row.className = 'condition-row';
+                row.innerHTML = `
+                    <div class="condition-field">
+                        <input type="text" value="${condition.field || ''}" placeholder="Field" />
+                    </div>
+                    <div class="condition-operator">
+                        <select>
+                            <option value="equals" ${condition.operator === 'equals' ? 'selected' : ''}>Equals</option>
+                            <option value="notEquals" ${condition.operator === 'notEquals' ? 'selected' : ''}>Not Equals</option>
+                            <option value="greaterThan" ${condition.operator === 'greaterThan' ? 'selected' : ''}>Greater Than</option>
+                            <option value="lessThan" ${condition.operator === 'lessThan' ? 'selected' : ''}>Less Than</option>
+                            <option value="contains" ${condition.operator === 'contains' ? 'selected' : ''}>Contains</option>
+                            <option value="isEmpty" ${condition.operator === 'isEmpty' ? 'selected' : ''}>Is Empty</option>
+                            <option value="isNotEmpty" ${condition.operator === 'isNotEmpty' ? 'selected' : ''}>Is Not Empty</option>
+                        </select>
+                    </div>
+                    <div class="condition-value">
+                        <input type="text" value="${condition.value || ''}" placeholder="Value" />
+                    </div>
+                    <div class="condition-logical">
+                        <select>
+                            <option value="AND" ${condition.logicalOperator === 'AND' ? 'selected' : ''}>AND</option>
+                            <option value="OR" ${condition.logicalOperator === 'OR' ? 'selected' : ''}>OR</option>
+                            <option value="NOT" ${condition.logicalOperator === 'NOT' ? 'selected' : ''}>NOT</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="button" onclick="removeCondition(this)">Remove</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            }
+
+            populateActions(actions) {
+                const container = document.getElementById('actionsContainer');
+                container.innerHTML = '';
+                
+                if (actions && actions.length > 0) {
+                    actions.forEach((action, index) => {
+                        this.addActionRow(action, index);
+                    });
+                } else {
+                    this.addActionRow({}, 0);
+                }
+            }
+
+            addActionRow(action = {}, index = 0) {
+                const container = document.getElementById('actionsContainer');
+                const row = document.createElement('div');
+                row.className = 'action-row';
+                row.innerHTML = `
+                    <div class="action-type">
+                        <select>
+                            <option value="setField" ${action.type === 'setField' ? 'selected' : ''}>Set Field</option>
+                            <option value="clearField" ${action.type === 'clearField' ? 'selected' : ''}>Clear Field</option>
+                            <option value="showField" ${action.type === 'showField' ? 'selected' : ''}>Show Field</option>
+                            <option value="hideField" ${action.type === 'hideField' ? 'selected' : ''}>Hide Field</option>
+                            <option value="validate" ${action.type === 'validate' ? 'selected' : ''}>Validate</option>
+                            <option value="showMessage" ${action.type === 'showMessage' ? 'selected' : ''}>Show Message</option>
+                        </select>
+                    </div>
+                    <div class="action-field">
+                        <input type="text" value="${action.field || ''}" placeholder="Field" />
+                    </div>
+                    <div class="action-value">
+                        <input type="text" value="${action.value || ''}" placeholder="Value" />
+                    </div>
+                    <div class="action-message">
+                        <input type="text" value="${action.message || ''}" placeholder="Message" />
+                    </div>
+                    <div>
+                        <button type="button" onclick="removeAction(this)">Remove</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            }
+
+            populateDecisionTable(decisionTable) {
+                const container = document.getElementById('decisionTableContainer');
+                
+                if (decisionTable && decisionTable.length > 0) {
+                    container.innerHTML = '';
+                    decisionTable.forEach((row, index) => {
+                        this.addDecisionTableRow(row, index);
+                    });
+                } else {
+                    container.innerHTML = '<p>No decision table rows defined.</p>';
+                }
+            }
+
+            addDecisionTableRow(row = {}, index = 0) {
+                const container = document.getElementById('decisionTableContainer');
+                const rowElement = document.createElement('div');
+                rowElement.className = 'decision-table-row';
+                rowElement.innerHTML = `
+                    <div class="row-header">
+                        <h4>Row ${index + 1} (ID: ${row.id || 'New'})</h4>
+                        <button type="button" onclick="removeDecisionTableRow(this)">Remove Row</button>
+                    </div>
+                    <div class="row-conditions">
+                        <h5>Conditions:</h5>
+                        <div class="conditions-list">
+                            ${(row.conditions || []).map(condition => `
+                                <div class="condition-item">
+                                    <span>${condition.field} ${condition.operator} ${condition.value}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="row-actions">
+                        <h5>Actions:</h5>
+                        <div class="actions-list">
+                            ${(row.actions || []).map(action => `
+                                <div class="action-item">
+                                    <span>${action.type} ${action.field} = ${action.value}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(rowElement);
+            }
+
+            showMessage(message, type = 'info') {
+                const container = document.getElementById('messageContainer');
+                container.innerHTML = `<div class="${type}">${message}</div>`;
+                
+                if (type === 'success' || type === 'error') {
+                    setTimeout(() => {
+                        container.innerHTML = '';
+                    }, 5000);
+                }
+            }
+        }
+
+        // Initialize editor
+        const ruleEditor = new BusinessRuleEditor();
+
+        // Global functions for HTML onclick handlers
+        function loadRule() {
+            ruleEditor.loadRule();
+        }
+
+        function saveRule() {
+            console.log('Save rule functionality would be implemented here');
+            ruleEditor.showMessage('Save functionality not implemented in this demo', 'info');
+        }
+
+        function clearForm() {
+            document.getElementById('ruleName').value = '';
+            document.getElementById('ruleDescription').value = '';
+            document.getElementById('dataObject').value = '';
+            document.getElementById('priority').value = '1';
+            document.getElementById('status').value = 'draft';
+            document.getElementById('enabled').checked = true;
+            document.getElementById('tags').value = '';
+            
+            document.querySelectorAll('.scope-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.rule-type-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            document.getElementById('conditionsContainer').innerHTML = '';
+            document.getElementById('actionsContainer').innerHTML = '';
+            document.getElementById('decisionTableContainer').innerHTML = '<p>No decision table rows defined.</p>';
+            
+            ruleEditor.showMessage('Form cleared', 'info');
+        }
+
+        function selectScope(scope) {
+            document.querySelectorAll('.scope-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            document.querySelector(`[data-scope="${scope}"]`).classList.add('active');
+        }
+
+        function selectRuleType(type) {
+            document.querySelectorAll('.rule-type-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            document.querySelector(`[data-rule-type="${type}"]`).classList.add('active');
+        }
+
+        function addCondition() {
+            ruleEditor.addConditionRow();
+        }
+
+        function removeCondition(button) {
+            button.closest('.condition-row').remove();
+        }
+
+        function addAction() {
+            ruleEditor.addActionRow();
+        }
+
+        function removeAction(button) {
+            button.closest('.action-row').remove();
+        }
+
+        function addDecisionTableRow() {
+            ruleEditor.addDecisionTableRow();
+        }
+
+        function removeDecisionTableRow(button) {
+            button.closest('.decision-table-row').remove();
+        }
+    </script>
+</body>
+</html>
+

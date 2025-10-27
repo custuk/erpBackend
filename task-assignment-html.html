@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assign Tasks - ERP System</title>
+    <link rel="stylesheet" href="task-assignment-styling.css">
+    <style>
+        /* Global dark theme styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #1a1d29;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Overlay for modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Demo Controls -->
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="openModalBtn" style="background: #2b6cb0; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                Open Task Assignment Modal
+            </button>
+        </div>
+        
+        <div class="modal-overlay" id="modalOverlay">
+            <div class="task-assignment-modal">
+                <!-- Header -->
+                <div class="task-assignment-header">
+                    <h2 class="task-assignment-title">
+                        <span class="pin-icon">📍</span>
+                        Assign Tasks to Test
+                    </h2>
+                </div>
+                
+                <!-- Location Tag -->
+                <div class="location-tag">
+                    Location: Test (Manufacturing)
+                </div>
+                
+                <!-- Available Tasks Section -->
+                <div class="available-tasks-section">
+                    <h3 class="available-tasks-title">AVAILABLE TASKS (5)</h3>
+                    
+                    <div class="tasks-list">
+                        <!-- Task 1 -->
+                        <div class="task-card" data-task-id="task-1">
+                            <div class="task-icon">📋</div>
+                            <div class="task-content">
+                                <h4 class="task-title">Production Planning</h4>
+                                <p class="task-description">Plan production schedule and resource allocation for optimal efficiency</p>
+                            </div>
+                            <button class="task-select-button">
+                                <span class="radio-icon"></span>
+                                CLICK TO SELECT
+                            </button>
+                        </div>
+                        
+                        <!-- Task 2 -->
+                        <div class="task-card" data-task-id="task-2">
+                            <div class="task-icon">📦</div>
+                            <div class="task-content">
+                                <h4 class="task-title">Material Preparation</h4>
+                                <p class="task-description">Prepare materials for production and ensure quality standards</p>
+                            </div>
+                            <button class="task-select-button">
+                                <span class="radio-icon"></span>
+                                CLICK TO SELECT
+                            </button>
+                        </div>
+                        
+                        <!-- Task 3 -->
+                        <div class="task-card" data-task-id="task-3">
+                            <div class="task-icon">🔍</div>
+                            <div class="task-content">
+                                <h4 class="task-title">Quality Control</h4>
+                                <p class="task-description">Perform in-process quality control and final inspection</p>
+                            </div>
+                            <button class="task-select-button">
+                                <span class="radio-icon"></span>
+                                CLICK TO SELECT
+                            </button>
+                        </div>
+                        
+                        <!-- Task 4 -->
+                        <div class="task-card" data-task-id="task-4">
+                            <div class="task-icon">🔧</div>
+                            <div class="task-content">
+                                <h4 class="task-title">Equipment Maintenance</h4>
+                                <p class="task-description">Perform scheduled equipment maintenance and calibration</p>
+                            </div>
+                            <button class="task-select-button">
+                                <span class="radio-icon"></span>
+                                CLICK TO SELECT
+                            </button>
+                        </div>
+                        
+                        <!-- Task 5 -->
+                        <div class="task-card" data-task-id="task-5">
+                            <div class="task-icon">🛡️</div>
+                            <div class="task-content">
+                                <h4 class="task-title">Safety Inspection</h4>
+                                <p class="task-description">Conduct safety inspection and compliance verification</p>
+                            </div>
+                            <button class="task-select-button">
+                                <span class="radio-icon"></span>
+                                CLICK TO SELECT
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div class="task-assignment-footer">
+                    <button class="cancel-button">CANCEL</button>
+                    <button class="assign-button" id="assignButton" disabled>ASSIGN 0 TASKS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Task selection functionality
+        class TaskAssignment {
+            constructor() {
+                this.selectedTasks = new Set();
+                this.taskCards = document.querySelectorAll('.task-card');
+                this.assignButton = document.getElementById('assignButton');
+                
+                this.init();
+            }
+            
+            init() {
+                // Add click listeners to task cards
+                this.taskCards.forEach(card => {
+                    const button = card.querySelector('.task-select-button');
+                    
+                    card.addEventListener('click', (e) => {
+                        if (e.target !== button) {
+                            this.toggleTask(card);
+                        }
+                    });
+                    
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleTask(card);
+                    });
+                });
+                
+                // Add cancel button listener
+                document.querySelector('.cancel-button').addEventListener('click', () => {
+                    this.closeModal();
+                });
+                
+                // Add assign button listener
+                this.assignButton.addEventListener('click', () => {
+                    this.assignTasks();
+                });
+            }
+            
+            toggleTask(card) {
+                const taskId = card.dataset.taskId;
+                const button = card.querySelector('.task-select-button');
+                
+                if (this.selectedTasks.has(taskId)) {
+                    // Deselect task
+                    this.selectedTasks.delete(taskId);
+                    card.classList.remove('selected');
+                    button.textContent = 'CLICK TO SELECT';
+                } else {
+                    // Select task
+                    this.selectedTasks.add(taskId);
+                    card.classList.add('selected');
+                    button.textContent = 'SELECTED';
+                    card.classList.add('selecting');
+                    
+                    // Remove animation class after animation completes
+                    setTimeout(() => {
+                        card.classList.remove('selecting');
+                    }, 300);
+                }
+                
+                this.updateAssignButton();
+            }
+            
+            updateAssignButton() {
+                const count = this.selectedTasks.size;
+                this.assignButton.textContent = `ASSIGN ${count} TASK${count !== 1 ? 'S' : ''}`;
+                this.assignButton.disabled = count === 0;
+            }
+            
+            assignTasks() {
+                if (this.selectedTasks.size === 0) return;
+                
+                // Show loading state
+                this.taskCards.forEach(card => {
+                    if (this.selectedTasks.has(card.dataset.taskId)) {
+                        card.classList.add('loading');
+                    }
+                });
+                
+                // Simulate API call
+                setTimeout(() => {
+                    alert(`Successfully assigned ${this.selectedTasks.size} task(s)!`);
+                    this.closeModal();
+                }, 1000);
+            }
+            
+            closeModal() {
+                // Close the modal by hiding the overlay
+                const overlay = document.getElementById('modalOverlay');
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
+                
+                // Reset selections
+                this.selectedTasks.clear();
+                this.taskCards.forEach(card => {
+                    card.classList.remove('selected', 'loading');
+                    const button = card.querySelector('.task-select-button');
+                    button.textContent = 'CLICK TO SELECT';
+                });
+                
+                // Reset assign button
+                this.assignButton.textContent = 'ASSIGN 0 TASKS';
+                this.assignButton.disabled = true;
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new TaskAssignment();
+            
+            // Add reopen modal functionality
+            const openModalBtn = document.getElementById('openModalBtn');
+            const modalOverlay = document.getElementById('modalOverlay');
+            
+            openModalBtn.addEventListener('click', () => {
+                modalOverlay.style.display = 'flex';
+            });
+        });
+    </script>
+</body>
+</html>
