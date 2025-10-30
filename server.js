@@ -12,23 +12,54 @@ const PORT = process.env.PORT || 3001;
 // Security middleware
 app.use(helmet());
 
-// CORS middleware
+// CORS middleware (Fixed)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:3002",
+  "https://erp.data-orchestra.co.uk",
+  "https://erpapi.data-orchestra.co.uk"
+];
+
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? false
-        : [
-            "http://localhost:3000",
-            "http://localhost:3001", 
-            "http://localhost:3002",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:3001",
-            "http://127.0.0.1:3002"
-          ],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn("❌ Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
+
+// Handle OPTIONS preflight for all routes
+app.options("*", cors());
+
+// CORS middleware
+// app.use(
+//   cors({
+//     origin:
+//       process.env.NODE_ENV === "production"
+//         ? false
+//         : [
+//           "http://localhost:3000",
+//           "http://localhost:3001",
+//           "http://localhost:3002",
+//           "http://127.0.0.1:3000",
+//           "http://127.0.0.1:3001",
+//           "http://127.0.0.1:3002",
+//           "https://erpapi.data-orchestra.co.uk/"
+//         ],
+//     credentials: true,
+//   })
+// );
 
 // Rate limiting
 const limiter = rateLimit({
@@ -39,7 +70,7 @@ const limiter = rateLimit({
 app.use("/api/", limiter);
 
 // Body parsing middleware
-app.use(express.json({ 
+app.use(express.json({
   limit: "10mb",
   verify: (req, res, buf) => {
     try {
