@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ChildRequest = require('../models/ChildRequest');
-const MaterialRequest = require('../models/MaterialRequest');
+const DataRequest = require('../models/DataRequest');
 
 // GET all child requests with pagination and filtering
 router.get('/', async (req, res) => {
@@ -90,7 +90,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const childRequest = await ChildRequest.findById(req.params.id)
-      .populate('parentRequestId', 'requestId requestDescription status materialItems');
+      .populate('parentRequestId', 'requestId requestDescription status requestItems');
     
     if (!childRequest) {
       return res.status(404).json({
@@ -118,7 +118,7 @@ router.get('/by-child-request-id/:childRequestId', async (req, res) => {
   try {
     const childRequest = await ChildRequest.findOne({ 
       childRequestId: req.params.childRequestId 
-    }).populate('parentRequestId', 'requestId requestDescription status materialItems');
+    }).populate('parentRequestId', 'requestId requestDescription status requestItems');
     
     if (!childRequest) {
       return res.status(404).json({
@@ -199,7 +199,7 @@ router.post('/', async (req, res) => {
     const requestData = req.body;
     
     // Validate parent request exists
-    const parentRequest = await MaterialRequest.findById(requestData.parentRequestId);
+    const parentRequest = await DataRequest.findById(requestData.parentRequestId);
     if (!parentRequest) {
       return res.status(400).json({
         success: false,
@@ -356,7 +356,7 @@ router.post('/from-parent/:parentRequestId', async (req, res) => {
     const { requesterId, businessJustification, priority = 'medium' } = req.body;
     
     // Validate parent request exists
-    const parentRequest = await MaterialRequest.findById(parentRequestId);
+    const parentRequest = await DataRequest.findById(parentRequestId);
     if (!parentRequest) {
       return res.status(404).json({
         success: false,
@@ -381,8 +381,8 @@ router.post('/from-parent/:parentRequestId', async (req, res) => {
     // Create child requests for each material item
     const childRequests = [];
     
-    for (let i = 0; i < parentRequest.materialItems.length; i++) {
-      const materialItem = { ...parentRequest.materialItems[i].toObject() };
+    for (let i = 0; i < parentRequest.requestItems.length; i++) {
+      const materialItem = { ...parentRequest.requestItems[i].toObject() };
       
       // Ensure quantity is set
       if (!materialItem.quantity) {
@@ -475,7 +475,7 @@ router.put('/:id', async (req, res) => {
     delete updates.completedAt;
     console.log("updates >> ", updates)
     // Validate material items if being updated
-    // if (updates.materialItems && updates.materialItems.length === 0) {
+    // if (updates.requestItems && updates.requestItems.length === 0) {
     //   return res.status(400).json({
     //     success: false,
     //     message: 'At least one material item is required'
@@ -579,7 +579,7 @@ router.put('/by-child-request-id/:childRequestId', async (req, res) => {
       if (updates.supplyChainRouteData.locations && Array.isArray(updates.supplyChainRouteData.locations)) {
         for (let i = 0; i < updates.supplyChainRouteData.locations.length; i++) {
           const location = updates.supplyChainRouteData.locations[i];
-          console.log(`ChildRequest Update by ID >> Location ${i}: type=${location.type}, id=${location.id}, name=${location.name}`);
+          console.log(`ChildRequest  Update by ID >> Location ${i}: type=${location.type}, id=${location.id}, name=${location.name}`);
           
           // Validate location has required fields
           if (!location.id) {

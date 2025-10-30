@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const childMaterialItemSchema = new mongoose.Schema(
+const childrequestItemschema = new mongoose.Schema(
     {
         materialId: {
             type: String,
@@ -278,14 +278,14 @@ childRequestSchema.pre("save", function (next) {
 });
 
 // Virtual for total material items count
-childRequestSchema.virtual("totalMaterialItems").get(function () {
-    return this.materialItems ? this.materialItems.length : 0;
+childRequestSchema.virtual("totalrequestItems").get(function () {
+    return this.requestItems ? this.requestItems.length : 0;
 });
 
 // Virtual for total estimated cost
 childRequestSchema.virtual("totalEstimatedCost").get(function () {
-    if (!this.materialItems) return 0;
-    return this.materialItems.reduce((total, item) => {
+    if (!this.requestItems) return 0;
+    return this.requestItems.reduce((total, item) => {
         return total + (item.totalPrice || 0);
     }, 0);
 });
