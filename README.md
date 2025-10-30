@@ -313,7 +313,7 @@ curl -X POST http://localhost:3000/api/material-requests \
     "requesterId": "USER001",
     "setupType": "SingleLocation",
     "location": "GB01",
-    "materialItems": [
+    "requestItems": [
       {
         "materialId": "MAT001",
         "description": "High-quality steel plate",
