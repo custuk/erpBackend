@@ -665,7 +665,7 @@ curl -X POST http://localhost:3000/api/business-rules \
 - Payment: method, status, transaction ID
 - Shipping: method, address, tracking number
 
-### Material Request Model (matDataRec)
+### Material Request Model (materialRequest)
 
 - Request details: request ID, description, business justification, requester
 - Setup configuration: setup type (Single Location/Supply Chain Route), locations

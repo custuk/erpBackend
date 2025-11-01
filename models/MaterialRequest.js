@@ -218,7 +218,7 @@ const materialRequestSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    collection: "matDataRec", // This ensures the collection name is 'matDataRec'
+    collection: "materialRequest", // This ensures the collection name is 'materialRequest'
   }
 );
 

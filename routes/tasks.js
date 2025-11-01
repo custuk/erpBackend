@@ -63,10 +63,10 @@ router.get('/', async (req, res) => {
       filter.dueDate = { $lte: new Date(req.query.dueDate) };
     }
     
-    // Filter by overdue tasks
+    // Filter by overdue tasks (only for Active tasks)
     if (req.query.overdue === 'true') {
       filter.dueDate = { $lt: new Date() };
-      filter.status = { $nin: ['completed', 'cancelled'] };
+      filter.status = 'Active';
     }
     
     // Search by name, description, or data object
@@ -116,11 +116,11 @@ router.get('/', async (req, res) => {
         else if (task.priority === 'Low') score += 5;
         
         // Status boost
-        if (task.status === 'in_progress') score += 10;
-        else if (task.status === 'pending') score += 5;
+        if (task.status === 'Active') score += 10;
+        else if (task.status === 'Draft') score += 5;
         
-        // Overdue penalty
-        if (task.isOverdue) score -= 15;
+        // Overdue penalty (only for Active tasks)
+        if (task.status === 'Active' && task.isOverdue) score -= 15;
         
         return {
           ...task.toObject(),
@@ -477,27 +477,21 @@ router.get('/stats/overview', async (req, res) => {
           _id: null,
           totalTasks: { $sum: 1 },
           activeTasks: {
-            $sum: { $cond: [{ $eq: ['$isActive', true] }, 1, 0] }
+            $sum: { $cond: [{ $eq: ['$status', 'Active'] }, 1, 0] }
           },
-          completedTasks: {
-            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
+          draftTasks: {
+            $sum: { $cond: [{ $eq: ['$status', 'Draft'] }, 1, 0] }
           },
-          inProgressTasks: {
-            $sum: { $cond: [{ $eq: ['$status', 'in_progress'] }, 1, 0] }
-          },
-          pendingTasks: {
-            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
-          },
-          failedTasks: {
-            $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] }
+          archivedTasks: {
+            $sum: { $cond: [{ $eq: ['$status', 'Archived'] }, 1, 0] }
           },
           overdueTasks: {
             $sum: {
               $cond: [
                 {
                   $and: [
-                    { $lt: ['$dueDate', new Date()] },
-                    { $not: { $in: ['$status', ['completed', 'cancelled']] } }
+                    { $eq: ['$status', 'Active'] },
+                    { $lt: ['$dueDate', new Date()] }
                   ]
                 },
                 1,
@@ -547,10 +541,8 @@ router.get('/stats/overview', async (req, res) => {
         overview: stats[0] || {
           totalTasks: 0,
           activeTasks: 0,
-          completedTasks: 0,
-          inProgressTasks: 0,
-          pendingTasks: 0,
-          failedTasks: 0,
+          draftTasks: 0,
+          archivedTasks: 0,
           overdueTasks: 0
         },
         byPriority: priorityStats,
@@ -613,6 +605,23 @@ router.get('/meta/tags', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching tags',
+      error: error.message
+    });
+  }
+});
+
+// GET all unique statuses
+router.get('/meta/statuses', async (req, res) => {
+  try {
+    const statuses = ['Active', 'Draft', 'Archived'];
+    res.json({
+      success: true,
+      data: statuses
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching statuses',
       error: error.message
     });
   }

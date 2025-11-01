@@ -75,12 +75,12 @@ const taskSchema = new mongoose.Schema(
     },
     allowedStatuses: {
       type: [String],
-      default: ["draft", "pending", "in_progress", "completed", "cancelled", "failed"]
+      default: ["Active", "Draft", "Archived"]
     },
     status: {
       type: String,
-      enum: ["draft", "pending", "in_progress", "completed", "cancelled", "failed", "on_hold"],
-      default: "draft"
+      enum: ["Active", "Draft", "Archived"],
+      default: "Draft"
     },
     sla: {
       type: String,
@@ -201,7 +201,7 @@ taskSchema.virtual("ageInDays").get(function () {
 
 // Virtual for overdue status
 taskSchema.virtual("isOverdue").get(function () {
-  if (this.dueDate && this.status !== "completed" && this.status !== "cancelled") {
+  if (this.dueDate && this.status === "Active") {
     return new Date() > this.dueDate;
   }
   return false;
@@ -213,13 +213,13 @@ taskSchema.set("toObject", { virtuals: true });
 
 // Pre-save middleware to update timestamps based on status changes
 taskSchema.pre("save", function (next) {
-  // Update startedAt when status changes to in_progress
-  if (this.isModified("status") && this.status === "in_progress" && !this.startedAt) {
+  // Update startedAt when status changes to Active
+  if (this.isModified("status") && this.status === "Active" && !this.startedAt) {
     this.startedAt = new Date();
   }
   
-  // Update completedAt when status changes to completed
-  if (this.isModified("status") && this.status === "completed" && !this.completedAt) {
+  // Update completedAt when status changes to Archived (marking as archived)
+  if (this.isModified("status") && this.status === "Archived" && !this.completedAt) {
     this.completedAt = new Date();
   }
   
