@@ -1286,4 +1286,35 @@ router.get('/meta/categories', async (req, res) => {
   }
 });
 
+// GET all supported condition operators (for frontend alignment)
+router.get('/meta/operators', async (req, res) => {
+  try {
+    // Return the operators that match the frontend format
+    const operators = [
+      { value: 'equals', label: 'Equals' },
+      { value: 'not_equals', label: 'Not Equals' },
+      { value: 'greater_than', label: 'Greater Than' },
+      { value: 'less_than', label: 'Less Than' },
+      { value: 'contains', label: 'Contains' },
+      { value: 'starts_with', label: 'Starts With' },
+      { value: 'ends_with', label: 'Ends With' },
+      { value: 'in', label: 'In List' },
+      { value: 'not_in', label: 'Not In List' },
+      { value: 'is_empty', label: 'Is Empty' },
+      { value: 'is_not_empty', label: 'Is Not Empty' }
+    ];
+    
+    res.json({
+      success: true,
+      data: operators
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching operators',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

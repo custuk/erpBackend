@@ -15,40 +15,38 @@ const conditionSchema = new mongoose.Schema({
     type: String,
     required: [true, "Operator is required"],
     enum: [
-      // Equality operators (both formats)
+      // Frontend operators (primary format)
       "equals",
-      "notEquals",
       "not_equals",
-      // Comparison operators (both formats)
-      "greaterThan",
       "greater_than",
+      "less_than",
+      "contains",
+      "starts_with",
+      "ends_with",
+      "in",
+      "not_in",
+      // Empty/Null check operators (frontend format)
+      "is_empty",
+      "is_not_empty",
+      // Legacy/camelCase formats (for backward compatibility)
+      "notEquals",
+      "greaterThan",
       "greaterThanOrEqual",
       "greater_than_or_equal",
       "lessThan",
-      "less_than",
       "lessThanOrEqual",
       "less_than_or_equal",
-      // String operators
-      "contains",
       "notContains",
       "not_contains",
       "startsWith",
-      "starts_with",
       "endsWith",
-      "ends_with",
-      // Empty/Null check operators (both formats)
       "isEmpty",
-      "is_empty",
       "isNotEmpty",
-      "is_not_empty",
       "isNull",
       "is_null",
       "isNotNull",
       "is_not_null",
-      // Array operators
-      "in",
       "notIn",
-      "not_in",
       // Other operators
       "between",
       "regex"
