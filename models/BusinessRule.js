@@ -15,22 +15,41 @@ const conditionSchema = new mongoose.Schema({
     type: String,
     required: [true, "Operator is required"],
     enum: [
+      // Equality operators (both formats)
       "equals",
       "notEquals",
+      "not_equals",
+      // Comparison operators (both formats)
       "greaterThan",
+      "greater_than",
       "greaterThanOrEqual",
+      "greater_than_or_equal",
       "lessThan",
+      "less_than",
       "lessThanOrEqual",
+      "less_than_or_equal",
+      // String operators
       "contains",
       "notContains",
+      "not_contains",
       "startsWith",
+      "starts_with",
       "endsWith",
+      "ends_with",
+      // Empty/Null check operators (both formats)
       "isEmpty",
+      "is_empty",
       "isNotEmpty",
+      "is_not_empty",
       "isNull",
+      "is_null",
       "isNotNull",
+      "is_not_null",
+      // Array operators
       "in",
       "notIn",
+      "not_in",
+      // Other operators
       "between",
       "regex"
     ],
@@ -230,6 +249,15 @@ const businessRuleSchema = new mongoose.Schema(
       required: [true, "Data object is required"],
       trim: true
     },
+    dataObjects: {
+      type: [String],
+      default: []
+    },
+    field: {
+      type: String,
+      trim: true,
+      default: ""
+    },
     status: {
       type: String,
       enum: ["draft", "active", "inactive", "archived", "deprecated"],
@@ -353,6 +381,16 @@ const businessRuleSchema = new mongoose.Schema(
       type: String,
       enum: ["global", "dataObject", "field", "user", "role", "generic"],
       default: "dataObject"
+    },
+    // Hook points for rule execution
+    hookPoints: {
+      type: [String],
+      default: []
+    },
+    // Request types this rule applies to
+    requestTypes: {
+      type: [String],
+      default: []
     }
   },
   {
@@ -466,56 +504,86 @@ businessRuleSchema.methods.evaluateConditions = function(data) {
     let conditionResult = false;
     
     switch (condition.operator) {
+      // Equality operators
       case "equals":
         conditionResult = fieldValue === condition.value;
         break;
       case "notEquals":
+      case "not_equals":
         conditionResult = fieldValue !== condition.value;
         break;
+      // Comparison operators
       case "greaterThan":
+      case "greater_than":
         conditionResult = fieldValue > condition.value;
         break;
       case "greaterThanOrEqual":
+      case "greater_than_or_equal":
         conditionResult = fieldValue >= condition.value;
         break;
       case "lessThan":
+      case "less_than":
         conditionResult = fieldValue < condition.value;
         break;
       case "lessThanOrEqual":
+      case "less_than_or_equal":
         conditionResult = fieldValue <= condition.value;
         break;
+      // String operators
       case "contains":
         conditionResult = String(fieldValue).includes(String(condition.value));
         break;
       case "notContains":
+      case "not_contains":
         conditionResult = !String(fieldValue).includes(String(condition.value));
         break;
       case "startsWith":
+      case "starts_with":
         conditionResult = String(fieldValue).startsWith(String(condition.value));
         break;
       case "endsWith":
+      case "ends_with":
         conditionResult = String(fieldValue).endsWith(String(condition.value));
         break;
+      // Empty/Null check operators
       case "isEmpty":
+      case "is_empty":
         conditionResult = !fieldValue || fieldValue === "";
         break;
       case "isNotEmpty":
+      case "is_not_empty":
         conditionResult = fieldValue && fieldValue !== "";
         break;
       case "isNull":
+      case "is_null":
         conditionResult = fieldValue === null;
         break;
       case "isNotNull":
+      case "is_not_null":
         conditionResult = fieldValue !== null;
         break;
+      // Array operators
       case "in":
         conditionResult = Array.isArray(condition.value) && condition.value.includes(fieldValue);
         break;
       case "notIn":
+      case "not_in":
         conditionResult = Array.isArray(condition.value) && !condition.value.includes(fieldValue);
+        break;
+      // Other operators
+      case "between":
+        // Between two values
+        if (Array.isArray(condition.value) && condition.value.length === 2) {
+          conditionResult = fieldValue >= condition.value[0] && fieldValue <= condition.value[1];
+        } else {
+          conditionResult = false;
+        }
         break;
       case "regex":
         conditionResult = new RegExp(condition.value).test(String(fieldValue));
+        break;
+      default:
+        conditionResult = false;
         break;
     }
     
@@ -605,6 +673,12 @@ businessRuleSchema.methods.executeActions = function(data) {
           data[action.field] = action.value;
           result.success = true;
           result.message = `Value set for field ${action.field}`;
+          break;
+        case "calculate":
+        case "executeFunction":
+          // Functions are handled in the frontend, backend just stores the action
+          result.success = true;
+          result.message = `Function execution delegated to frontend for field ${action.field}`;
           break;
         case "showMessage":
           result.success = true;
