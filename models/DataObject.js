@@ -34,6 +34,7 @@ const dataObjectSchema = new mongoose.Schema(
         "HR Management",
         "Project Management",
         "Service Management",
+        "Plant Maintenance",
         "Quality Management",
         "Compliance Management",
         "Document Management",
