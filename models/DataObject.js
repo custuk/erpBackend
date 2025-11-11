@@ -7,18 +7,18 @@ const dataObjectSchema = new mongoose.Schema(
       type: String,
       required: [true, "Data Object ID is required"],
       unique: true,
-      trim: true
+      trim: true,
     },
     name: {
       type: String,
       required: [true, "Name is required"],
       trim: true,
-      maxlength: [200, "Name cannot exceed 200 characters"]
+      maxlength: [200, "Name cannot exceed 200 characters"],
     },
     description: {
       type: String,
       trim: true,
-      maxlength: [1000, "Description cannot exceed 1000 characters"]
+      maxlength: [1000, "Description cannot exceed 1000 characters"],
     },
     category: {
       type: String,
@@ -34,7 +34,6 @@ const dataObjectSchema = new mongoose.Schema(
         "HR Management",
         "Project Management",
         "Service Management",
-        "Plant Maintenance",
         "Quality Management",
         "Compliance Management",
         "Document Management",
@@ -44,173 +43,190 @@ const dataObjectSchema = new mongoose.Schema(
         "Integration",
         "Configuration",
         "System Administration",
-        "Other"
+        "Other",
+        "Plant Maintainance",
       ],
-      trim: true
+      trim: true,
     },
     icon: {
       type: String,
       default: "package",
-      trim: true
+      trim: true,
     },
     color: {
       type: String,
       default: "#f59e0b",
-      match: [/^#[0-9A-Fa-f]{6}$/, "Color must be a valid hex color code"]
+      match: [/^#[0-9A-Fa-f]{6}$/, "Color must be a valid hex color code"],
     },
     status: {
       type: String,
       enum: ["Active", "Inactive", "Draft", "Archived", "Deprecated"],
-      default: "Active"
+      default: "Active",
     },
     formId: {
       type: String,
-      trim: true
+      trim: true,
     },
     // Feature flags
     enableValidation: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableAuditTrail: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableWorkflow: {
       type: Boolean,
-      default: false
+      default: false,
     },
     enableNotifications: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableVersioning: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableAccessControl: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableDataEncryption: {
       type: Boolean,
-      default: false
+      default: false,
     },
     enableBackup: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableApiAccess: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableBulkOperations: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableSearch: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableExport: {
       type: Boolean,
-      default: true
+      default: true,
     },
     enableImport: {
       type: Boolean,
-      default: true
+      default: true,
     },
     // Configuration settings
     retentionPeriod: {
       type: Number,
       default: 365,
       min: [1, "Retention period must be at least 1 day"],
-      max: [3650, "Retention period cannot exceed 10 years"]
+      max: [3650, "Retention period cannot exceed 10 years"],
     },
     maxFileSize: {
       type: Number,
       default: 10,
       min: [1, "Max file size must be at least 1 MB"],
-      max: [1000, "Max file size cannot exceed 1000 MB"]
+      max: [1000, "Max file size cannot exceed 1000 MB"],
     },
     allowedFileTypes: {
       type: [String],
       default: ["pdf", "doc", "docx", "xlsx", "csv"],
       validate: {
-        validator: function(types) {
+        validator: function (types) {
           const allowedTypes = [
-            "pdf", "doc", "docx", "xlsx", "csv", "txt", "jpg", "jpeg", "png", 
-            "gif", "zip", "rar", "xml", "json", "html", "htm"
+            "pdf",
+            "doc",
+            "docx",
+            "xlsx",
+            "csv",
+            "txt",
+            "jpg",
+            "jpeg",
+            "png",
+            "gif",
+            "zip",
+            "rar",
+            "xml",
+            "json",
+            "html",
+            "htm",
           ];
-          return types.every(type => allowedTypes.includes(type.toLowerCase()));
+          return types.every((type) =>
+            allowedTypes.includes(type.toLowerCase())
+          );
         },
-        message: "Invalid file type in allowedFileTypes"
-      }
+        message: "Invalid file type in allowedFileTypes",
+      },
     },
     createdBy: {
       type: String,
       required: [true, "Created by is required"],
-      trim: true
+      trim: true,
     },
     version: {
       type: String,
       default: "1.0.0",
-      trim: true
+      trim: true,
     },
     isActive: {
       type: Boolean,
-      default: true
+      default: true,
     },
     tags: {
       type: [String],
-      default: []
+      default: [],
     },
     lastModifiedBy: {
       type: String,
-      trim: true
+      trim: true,
     },
     // Additional metadata
     usageCount: {
       type: Number,
       default: 0,
-      min: [0, "Usage count cannot be negative"]
+      min: [0, "Usage count cannot be negative"],
     },
     lastAccessedAt: {
-      type: Date
+      type: Date,
     },
     schemaVersion: {
       type: String,
-      default: "1.0"
+      default: "1.0",
     },
     // Access control settings
     permissions: {
       read: {
         type: [String],
-        default: []
+        default: [],
       },
       write: {
         type: [String],
-        default: []
+        default: [],
       },
       delete: {
         type: [String],
-        default: []
-      }
+        default: [],
+      },
     },
     // Workflow settings
     workflowConfig: {
       type: mongoose.Schema.Types.Mixed,
-      default: null
+      default: null,
     },
     // Validation rules
     validationRules: {
       type: mongoose.Schema.Types.Mixed,
-      default: null
-    }
+      default: null,
+    },
   },
   {
     timestamps: true,
-    collection: "objects"
+    collection: "objects",
   }
 );
 
@@ -229,7 +245,7 @@ dataObjectSchema.index({ lastAccessedAt: -1 });
 dataObjectSchema.index({
   name: "text",
   description: "text",
-  category: "text"
+  category: "text",
 });
 
 // Virtual for object age (days since creation)
@@ -243,7 +259,9 @@ dataObjectSchema.virtual("ageInDays").get(function () {
 // Virtual for retention status
 dataObjectSchema.virtual("isRetentionExpired").get(function () {
   if (this.retentionPeriod && this.createdAt) {
-    const expirationDate = new Date(this.createdAt.getTime() + (this.retentionPeriod * 24 * 60 * 60 * 1000));
+    const expirationDate = new Date(
+      this.createdAt.getTime() + this.retentionPeriod * 24 * 60 * 60 * 1000
+    );
     return new Date() > expirationDate;
   }
   return false;
@@ -252,11 +270,21 @@ dataObjectSchema.virtual("isRetentionExpired").get(function () {
 // Virtual for feature count
 dataObjectSchema.virtual("enabledFeaturesCount").get(function () {
   const features = [
-    'enableValidation', 'enableAuditTrail', 'enableWorkflow', 'enableNotifications',
-    'enableVersioning', 'enableAccessControl', 'enableDataEncryption', 'enableBackup',
-    'enableApiAccess', 'enableBulkOperations', 'enableSearch', 'enableExport', 'enableImport'
+    "enableValidation",
+    "enableAuditTrail",
+    "enableWorkflow",
+    "enableNotifications",
+    "enableVersioning",
+    "enableAccessControl",
+    "enableDataEncryption",
+    "enableBackup",
+    "enableApiAccess",
+    "enableBulkOperations",
+    "enableSearch",
+    "enableExport",
+    "enableImport",
   ];
-  return features.filter(feature => this[feature]).length;
+  return features.filter((feature) => this[feature]).length;
 });
 
 // Virtual for file size in MB
@@ -274,30 +302,30 @@ dataObjectSchema.pre("save", function (next) {
   if (this.isModified("usageCount")) {
     this.lastAccessedAt = new Date();
   }
-  
+
   next();
 });
 
 // Method to increment usage count
-dataObjectSchema.methods.incrementUsage = function() {
+dataObjectSchema.methods.incrementUsage = function () {
   this.usageCount += 1;
   this.lastAccessedAt = new Date();
   return this.save();
 };
 
 // Method to check if user has permission
-dataObjectSchema.methods.hasPermission = function(userId, action) {
+dataObjectSchema.methods.hasPermission = function (userId, action) {
   const permissions = this.permissions[action] || [];
-  return permissions.includes(userId) || permissions.includes('*');
+  return permissions.includes(userId) || permissions.includes("*");
 };
 
 // Static method to find by category
-dataObjectSchema.statics.findByCategory = function(category) {
+dataObjectSchema.statics.findByCategory = function (category) {
   return this.find({ category, isActive: true });
 };
 
 // Static method to find expired objects
-dataObjectSchema.statics.findExpired = function() {
+dataObjectSchema.statics.findExpired = function () {
   const now = new Date();
   return this.find({
     isActive: true,
@@ -307,11 +335,11 @@ dataObjectSchema.statics.findExpired = function() {
         {
           $add: [
             "$createdAt",
-            { $multiply: ["$retentionPeriod", 24 * 60 * 60 * 1000] }
-          ]
-        }
-      ]
-    }
+            { $multiply: ["$retentionPeriod", 24 * 60 * 60 * 1000] },
+          ],
+        },
+      ],
+    },
   });
 };
 

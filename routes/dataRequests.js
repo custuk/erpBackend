@@ -42,14 +42,18 @@ router.get('/', async (req, res) => {
       }
     }
     
-    // Search by request ID, description, or business justification
+    // Search by request ID, description, business justification, or any field in requestItems
     if (req.query.search) {
       filter.$or = [
         { requestId: { $regex: req.query.search, $options: 'i' } },
         { requestDescription: { $regex: req.query.search, $options: 'i' } },
         { businessJustification: { $regex: req.query.search, $options: 'i' } },
+        // Search in common fields that may exist in requestItems (dynamic)
         { 'requestItems.materialId': { $regex: req.query.search, $options: 'i' } },
-        { 'requestItems.description': { $regex: req.query.search, $options: 'i' } }
+        { 'requestItems.description': { $regex: req.query.search, $options: 'i' } },
+        { 'requestItems.objectId': { $regex: req.query.search, $options: 'i' } },
+        { 'requestItems.equipmentNumber': { $regex: req.query.search, $options: 'i' } },
+        { 'requestItems.equipmentDescription': { $regex: req.query.search, $options: 'i' } }
       ];
     }
 
@@ -168,58 +172,27 @@ router.post('/', async (req, res) => {
       });
     }
     
-    // Validate each data request item
+    // Dynamic validation based on requestType
+    // Only validate setupType-specific fields for Material Requests or when setupType is explicitly used
     for (let i = 0; i < requestData.requestItems.length; i++) {
       const item = requestData.requestItems[i];
       
-      // if (!item.materialId) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: `Material ID is required for item ${i + 1}`
-      //   });
-      // }
-      
-      // if (!item.description) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: `Description is required for item ${i + 1}`
-      //   });
-      // }
-      
-      // if (!item.uom) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: `UOM is required for item ${i + 1}`
-      //   });
-      // }
-      
-      // if (!item.materialType) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: `Material Type is required for item ${i + 1}`
-      //   });
-      // }
-      
-      // if (!item.materialGroup) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: `Material Group is required for item ${i + 1}`
-      //   });
-      // }
-      
-      // Validate setup type specific fields
-      if (item.setupType === 'SingleLocation' && !item.location) {
-        return res.status(400).json({
-          success: false,
-          message: `Location is required for Single Location setup in item ${i + 1}`
-        });
-      }
-      
-      if (item.setupType === 'SupplyChainRoute' && (!item.fromLocation || !item.toLocation)) {
-        return res.status(400).json({
-          success: false,
-          message: `From Location and To Location are required for Supply Chain Route setup in item ${i + 1}`
-        });
+      // Only validate setupType fields if this is a Material Request or if setupType is explicitly set
+      // For other request types (like Plant Maintenance), setupType might be optional or used differently
+      if (requestData.requestType === 'Material Request' && item.setupType) {
+        if (item.setupType === 'SingleLocation' && !item.location) {
+          return res.status(400).json({
+            success: false,
+            message: `Location is required for Single Location setup in item ${i + 1}`
+          });
+        }
+        
+        if (item.setupType === 'SupplyChainRoute' && (!item.fromLocation || !item.toLocation)) {
+          return res.status(400).json({
+            success: false,
+            message: `From Location and To Location are required for Supply Chain Route setup in item ${i + 1}`
+          });
+        }
       }
     }
     
@@ -228,8 +201,36 @@ router.post('/', async (req, res) => {
       requestData.status = 'draft';
     }
     
-    console.log("requestData", requestData);
+    console.log("📝 Data Request POST - Creating with dataFormat:", requestData.dataFormat);
+    console.log("📝 Data Request POST - requestType:", requestData.requestType);
+    console.log("📝 Data Request POST - requestItems count:", requestData.requestItems?.length);
+    
     const dataRequest = new DataRequest(requestData);
+    
+    // Mark requestItems as modified to ensure nested Mixed types are saved
+    if (dataRequest.requestItems && Array.isArray(dataRequest.requestItems)) {
+      dataRequest.markModified('requestItems');
+      // Mark nested Mixed fields within requestItems
+      dataRequest.requestItems.forEach((item, index) => {
+        if (item.supplyChainRouteData) {
+          dataRequest.markModified(`requestItems.${index}.supplyChainRouteData`);
+        }
+        if (item.assignedTasks) {
+          dataRequest.markModified(`requestItems.${index}.assignedTasks`);
+        }
+        if (item.approvalSteps) {
+          dataRequest.markModified(`requestItems.${index}.approvalSteps`);
+        }
+        if (item.attachments) {
+          dataRequest.markModified(`requestItems.${index}.attachments`);
+        }
+      });
+    }
+    
+    if (dataRequest.specificFieldsObject) {
+      dataRequest.markModified('specificFieldsObject');
+    }
+    
     await dataRequest.save();
 
     res.status(201).json({
@@ -282,7 +283,9 @@ router.put('/:id', async (req, res) => {
     delete updates.rejectionReason;
     delete updates.completedAt;
     
-    console.log("updates >> ", updates);
+    console.log("🔄 Data Request PUT - Updates:", Object.keys(updates));
+    console.log("🔄 Data Request PUT - requestType:", updates.requestType);
+    console.log("🔄 Data Request PUT - dataFormat:", updates.dataFormat);
     
     // Validate requestItems if being updated
     if (updates.requestItems) {
@@ -293,67 +296,33 @@ router.put('/:id', async (req, res) => {
         });
       }
       
-      // Validate each data request item
+      // Dynamic validation based on requestType
+      // Only validate setupType-specific fields for Material Requests or when setupType is explicitly used
+      const requestType = updates.requestType || (await DataRequest.findById(req.params.id))?.requestType;
       for (let i = 0; i < updates.requestItems.length; i++) {
         const item = updates.requestItems[i];
         
-        // if (!item.materialId) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `Material ID is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // if (!item.description) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `Description is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // if (!item.uom) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `UOM is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // if (!item.materialType) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `Material Type is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // if (!item.materialGroup) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `Material Group is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // Validate setup type specific fields
-        if (item.setupType === 'SingleLocation' && !item.location) {
-          return res.status(400).json({
-            success: false,
-            message: `Location is required for Single Location setup in item ${i + 1}`
-          });
-        }
-        
-        if (item.setupType === 'SupplyChainRoute' && (!item.fromLocation || !item.toLocation)) {
-          return res.status(400).json({
-            success: false,
-            message: `From Location and To Location are required for Supply Chain Route setup in item ${i + 1}`
-          });
+        // Only validate setupType fields if this is a Material Request or if setupType is explicitly set
+        if (requestType === 'Material Request' && item.setupType) {
+          if (item.setupType === 'SingleLocation' && !item.location) {
+            return res.status(400).json({
+              success: false,
+              message: `Location is required for Single Location setup in item ${i + 1}`
+            });
+          }
+          
+          if (item.setupType === 'SupplyChainRoute' && (!item.fromLocation || !item.toLocation)) {
+            return res.status(400).json({
+              success: false,
+              message: `From Location and To Location are required for Supply Chain Route setup in item ${i + 1}`
+            });
+          }
         }
       }
     }
     
-    const dataRequest = await DataRequest.findByIdAndUpdate(
-      req.params.id,
-      updates,
-      { new: true, runValidators: true }
-    );
+    // Use findById and save to properly handle nested Mixed types
+    const dataRequest = await DataRequest.findById(req.params.id);
 
     if (!dataRequest) {
       return res.status(404).json({
@@ -361,6 +330,55 @@ router.put('/:id', async (req, res) => {
         message: 'Data request not found'
       });
     }
+
+    // Apply updates to the document
+    Object.keys(updates).forEach(key => {
+      if (key === 'requestItems') {
+        // Replace the entire requestItems array
+        console.log(`📝 Updating requestItems array with ${updates[key].length} item(s)`);
+        if (updates[key].length > 0) {
+          console.log(`📋 First item keys:`, Object.keys(updates[key][0]));
+        }
+        dataRequest.set('requestItems', updates[key]);
+      } else {
+        dataRequest.set(key, updates[key]);
+      }
+    });
+
+    // Mark requestItems and nested Mixed fields as modified to ensure Mongoose saves them
+    dataRequest.markModified('requestItems');
+    
+    // Mark nested Mixed fields within requestItems as modified
+    if (dataRequest.requestItems && Array.isArray(dataRequest.requestItems)) {
+      dataRequest.requestItems.forEach((item, index) => {
+        if (item.supplyChainRouteData) {
+          dataRequest.markModified(`requestItems.${index}.supplyChainRouteData`);
+        }
+        if (item.assignedTasks) {
+          dataRequest.markModified(`requestItems.${index}.assignedTasks`);
+        }
+        if (item.approvalSteps) {
+          dataRequest.markModified(`requestItems.${index}.approvalSteps`);
+        }
+        if (item.attachments) {
+          dataRequest.markModified(`requestItems.${index}.attachments`);
+        }
+      });
+    }
+    
+    if (dataRequest.specificFieldsObject) {
+      dataRequest.markModified('specificFieldsObject');
+    }
+    
+    // Save the document to ensure all nested fields are persisted
+    await dataRequest.save({ runValidators: true });
+
+    console.log('✅ Data Request updated successfully:', {
+      id: dataRequest._id,
+      requestId: dataRequest.requestId,
+      requestType: dataRequest.requestType,
+      requestItems: dataRequest.requestItems ? dataRequest.requestItems.length : 0
+    });
 
     res.json({
       success: true,
@@ -399,6 +417,20 @@ router.put('/by-request-id/:requestId', async (req, res) => {
     delete updates.rejectionReason;
     delete updates.completedAt;
     
+    console.log("🔄 Data Request PUT by requestId - Updates:", Object.keys(updates));
+    console.log("🔄 Data Request PUT by requestId - requestType:", updates.requestType);
+    console.log("🔄 Data Request PUT by requestId - dataFormat:", updates.dataFormat);
+    
+    // Fetch existing request first (needed for validation and update)
+    const dataRequest = await DataRequest.findOne({ requestId: req.params.requestId });
+    
+    if (!dataRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Data request not found'
+      });
+    }
+    
     // Validate requestItems if being updated
     if (updates.requestItems) {
       if (!Array.isArray(updates.requestItems) || updates.requestItems.length === 0) {
@@ -408,74 +440,79 @@ router.put('/by-request-id/:requestId', async (req, res) => {
         });
       }
       
-      // Validate each data request item
+      // Dynamic validation based on requestType
+      // Only validate setupType-specific fields for Material Requests or when setupType is explicitly used
+      const requestType = updates.requestType || dataRequest.requestType;
       for (let i = 0; i < updates.requestItems.length; i++) {
         const item = updates.requestItems[i];
         
-        // if (!item.materialId) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `Material ID is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // if (!item.description) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `Description is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // if (!item.uom) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `UOM is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // if (!item.materialType) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `Material Type is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // if (!item.materialGroup) {
-        //   return res.status(400).json({
-        //     success: false,
-        //     message: `Material Group is required for item ${i + 1}`
-        //   });
-        // }
-        
-        // Validate setup type specific fields
-        if (item.setupType === 'SingleLocation' && !item.location) {
-          return res.status(400).json({
-            success: false,
-            message: `Location is required for Single Location setup in item ${i + 1}`
-          });
-        }
-        
-        if (item.setupType === 'SupplyChainRoute' && (!item.fromLocation || !item.toLocation)) {
-          return res.status(400).json({
-            success: false,
-            message: `From Location and To Location are required for Supply Chain Route setup in item ${i + 1}`
-          });
+        // Only validate setupType fields if this is a Material Request or if setupType is explicitly set
+        if (requestType === 'Material Request' && item.setupType) {
+          if (item.setupType === 'SingleLocation' && !item.location) {
+            return res.status(400).json({
+              success: false,
+              message: `Location is required for Single Location setup in item ${i + 1}`
+            });
+          }
+          
+          if (item.setupType === 'SupplyChainRoute' && (!item.fromLocation || !item.toLocation)) {
+            return res.status(400).json({
+              success: false,
+              message: `From Location and To Location are required for Supply Chain Route setup in item ${i + 1}`
+            });
+          }
         }
       }
     }
-    
-    const dataRequest = await DataRequest.findOneAndUpdate(
-      { requestId: req.params.requestId },
-      updates,
-      { new: true, runValidators: true }
-    );
 
-    if (!dataRequest) {
-      return res.status(404).json({
-        success: false,
-        message: 'Data request not found'
+    // Apply updates to the document
+    Object.keys(updates).forEach(key => {
+      if (key === 'requestItems') {
+        // Replace the entire requestItems array
+        console.log(`📝 Updating requestItems array with ${updates[key].length} item(s)`);
+        if (updates[key].length > 0) {
+          console.log(`📋 First item keys:`, Object.keys(updates[key][0]));
+        }
+        dataRequest.set('requestItems', updates[key]);
+      } else {
+        dataRequest.set(key, updates[key]);
+      }
+    });
+
+    // Mark requestItems and nested Mixed fields as modified to ensure Mongoose saves them
+    dataRequest.markModified('requestItems');
+    
+    // Mark nested Mixed fields within requestItems as modified
+    if (dataRequest.requestItems && Array.isArray(dataRequest.requestItems)) {
+      dataRequest.requestItems.forEach((item, index) => {
+        if (item.supplyChainRouteData) {
+          dataRequest.markModified(`requestItems.${index}.supplyChainRouteData`);
+        }
+        if (item.assignedTasks) {
+          dataRequest.markModified(`requestItems.${index}.assignedTasks`);
+        }
+        if (item.approvalSteps) {
+          dataRequest.markModified(`requestItems.${index}.approvalSteps`);
+        }
+        if (item.attachments) {
+          dataRequest.markModified(`requestItems.${index}.attachments`);
+        }
       });
     }
+    
+    if (dataRequest.specificFieldsObject) {
+      dataRequest.markModified('specificFieldsObject');
+    }
+    
+    // Save the document to ensure all nested fields are persisted
+    await dataRequest.save({ runValidators: true });
+
+    console.log('✅ Data Request updated successfully:', {
+      id: dataRequest._id,
+      requestId: dataRequest.requestId,
+      requestType: dataRequest.requestType,
+      requestItems: dataRequest.requestItems ? dataRequest.requestItems.length : 0
+    });
 
     res.json({
       success: true,

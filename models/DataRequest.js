@@ -1,59 +1,10 @@
 const mongoose = require("mongoose");
 
+// Use Mixed type for requestItems to support dynamic schemas
+// This allows different structures for Plant Maintenance, Material Request, etc.
 const dataRequestItemSchema = new mongoose.Schema(
-  {
-    action: {
-      type: String,
-      required: [true, "Action is required"],
-      enum: ["Create", "Update", "Delete"],
-      default: "Create",
-    },
-    materialId: {
-      type: String,
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    uom: {
-      type: String,
-      trim: true,
-    },
-    materialType: {
-      type: String,
-      trim: true,
-    },
-    materialGroup: {
-      type: String,
-      trim: true,
-    },
-    setupType: {
-      type: String,
-      enum: ["SingleLocation", "SupplyChainRoute"],
-      default: "SingleLocation",
-    },
-    location: {
-      type: String,
-      trim: true,
-    },
-    fromLocation: {
-      type: String,
-      trim: true,
-    },
-    toLocation: {
-      type: String,
-      trim: true,
-    },
-    supplyChainRoute: { type: String, trim: true },
-    supplyChainRouteData: {},
-    assignedTasks: {},
-    notes: {
-      type: String,
-      trim: true,
-    },
-  },
-  { _id: false }
+  {},
+  { _id: false, strict: false }
 );
 
 const dataRequestSchema = new mongoose.Schema(
@@ -84,6 +35,20 @@ const dataRequestSchema = new mongoose.Schema(
       required: [true, "Requester ID is required"],
       trim: true,
     },
+    // New fields for dynamic data format support
+    dataFormat: {
+      type: String,
+      trim: true,
+    },
+    specificFields: {
+      type: [String],
+      default: [],
+    },
+    specificFieldsObject: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    // requestItems is now flexible to accept any structure
     requestItems: {
       type: [dataRequestItemSchema],
       required: [true, "At least one data request item is required"],
@@ -147,9 +112,8 @@ dataRequestSchema.index({ status: 1 });
 dataRequestSchema.index({ priority: 1 });
 dataRequestSchema.index({ requestType: 1 });
 dataRequestSchema.index({ createdAt: -1 });
-dataRequestSchema.index({ "requestItems.materialId": 1 });
-dataRequestSchema.index({ "requestItems.materialType": 1 });
-dataRequestSchema.index({ "requestItems.materialGroup": 1 });
+// Indexes for common fields that may exist in requestItems (optional, won't fail if field doesn't exist)
+// Note: MongoDB will only index documents that have these fields
 
 // Virtual for total data request items count
 dataRequestSchema.virtual("totalRequestItems").get(function () {
