@@ -31,6 +31,10 @@ const taskSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    workstream: {
+      type: String,
+      trim: true
+    },
     taskType: {
       type: String,
       required: [true, "Task type is required"],
@@ -75,12 +79,12 @@ const taskSchema = new mongoose.Schema(
     },
     allowedStatuses: {
       type: [String],
-      default: ["Active", "Draft", "Archived"]
+      default: ["draft", "pending", "in_progress", "completed", "cancelled", "failed", "on_hold"]
     },
     status: {
       type: String,
-      enum: ["Active", "Draft", "Archived"],
-      default: "Draft"
+      enum: ["draft", "pending", "in_progress", "active", "completed", "cancelled", "failed", "on_hold", "Active", "Draft", "Archived"],
+      default: "draft"
     },
     sla: {
       type: String,
@@ -201,7 +205,9 @@ taskSchema.virtual("ageInDays").get(function () {
 
 // Virtual for overdue status
 taskSchema.virtual("isOverdue").get(function () {
-  if (this.dueDate && this.status === "Active") {
+  // Check if task is active (either "Active", "active", or "in_progress")
+  const activeStatuses = ["Active", "active", "in_progress", "pending"];
+  if (this.dueDate && activeStatuses.includes(this.status)) {
     return new Date() > this.dueDate;
   }
   return false;
@@ -213,13 +219,15 @@ taskSchema.set("toObject", { virtuals: true });
 
 // Pre-save middleware to update timestamps based on status changes
 taskSchema.pre("save", function (next) {
-  // Update startedAt when status changes to Active
-  if (this.isModified("status") && this.status === "Active" && !this.startedAt) {
+  // Update startedAt when status changes to active/in_progress
+  const activeStatuses = ["Active", "active", "in_progress", "pending"];
+  if (this.isModified("status") && activeStatuses.includes(this.status) && !this.startedAt) {
     this.startedAt = new Date();
   }
   
-  // Update completedAt when status changes to Archived (marking as archived)
-  if (this.isModified("status") && this.status === "Archived" && !this.completedAt) {
+  // Update completedAt when status changes to completed, cancelled, failed, or Archived
+  const completedStatuses = ["completed", "cancelled", "failed", "Archived"];
+  if (this.isModified("status") && completedStatuses.includes(this.status) && !this.completedAt) {
     this.completedAt = new Date();
   }
   

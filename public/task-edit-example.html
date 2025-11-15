@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Edit - Toast Example</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4">Task Edit with Toast Notifications</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <form id="task-edit-form">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Task Name</label>
+                    <input type="text" id="task-name" class="w-full px-3 py-2 border border-gray-300 rounded-md" value="Sample Task">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Workstream</label>
+                    <input type="text" id="workstream" class="w-full px-3 py-2 border border-gray-300 rounded-md" value="Planning">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="status" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="draft">Draft</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                    Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Include Toast Utility -->
+    <script src="js/toast.js"></script>
+    
+    <script>
+        // Example: Task Update with Toast Notification
+        document.getElementById('task-edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const taskId = '68d5cf95cf6f899c683251e4'; // Replace with actual task ID
+            const taskData = {
+                name: document.getElementById('task-name').value,
+                workstream: document.getElementById('workstream').value,
+                status: document.getElementById('status').value
+            };
+
+            try {
+                // Show loading state (optional)
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                submitButton.textContent = 'Saving...';
+                submitButton.disabled = true;
+
+                const response = await fetch(`http://localhost:5001/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+
+                const result = await response.json();
+
+                // Reset button
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+
+                if (result.success) {
+                    // Show success toast
+                    window.toast.success(result.message || 'Task updated successfully!');
+                } else {
+                    // Show error toast
+                    window.toast.error(result.message || 'Failed to update task');
+                }
+            } catch (error) {
+                console.error('Error updating task:', error);
+                window.toast.error('An error occurred while updating the task');
+            }
+        });
+
+        // Example: Handle API response with toast
+        async function updateTask(taskId, taskData) {
+            try {
+                const response = await fetch(`http://localhost:5001/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    window.toast.success(result.message || 'Task updated successfully!');
+                    return result.data;
+                } else {
+                    window.toast.error(result.message || 'Failed to update task');
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                window.toast.error('An error occurred while updating the task');
+                throw error;
+            }
+        }
+    </script>
+</body>
+</html>
+

@@ -66,6 +66,8 @@ const dataRequestSchema = new mongoose.Schema(
         "submitted",
         "approved",
         "rejected",
+        "dc_rejected",
+        "dc_referback",
         "in_progress",
         "completed",
         "cancelled",
@@ -88,6 +90,10 @@ const dataRequestSchema = new mongoose.Schema(
       type: Date,
     },
     rejectionReason: {
+      type: String,
+      trim: true,
+    },
+    referbackReason: {
       type: String,
       trim: true,
     },

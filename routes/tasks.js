@@ -63,10 +63,10 @@ router.get('/', async (req, res) => {
       filter.dueDate = { $lte: new Date(req.query.dueDate) };
     }
     
-    // Filter by overdue tasks (only for Active tasks)
+    // Filter by overdue tasks (only for active tasks)
     if (req.query.overdue === 'true') {
       filter.dueDate = { $lt: new Date() };
-      filter.status = 'Active';
+      filter.status = { $in: ['Active', 'active', 'in_progress', 'pending'] };
     }
     
     // Search by name, description, or data object
@@ -116,11 +116,13 @@ router.get('/', async (req, res) => {
         else if (task.priority === 'Low') score += 5;
         
         // Status boost
-        if (task.status === 'Active') score += 10;
-        else if (task.status === 'Draft') score += 5;
+        if (task.status === 'Active' || task.status === 'active' || task.status === 'in_progress') score += 10;
+        else if (task.status === 'Draft' || task.status === 'draft') score += 5;
+        else if (task.status === 'pending') score += 8;
         
-        // Overdue penalty (only for Active tasks)
-        if (task.status === 'Active' && task.isOverdue) score -= 15;
+        // Overdue penalty (only for active tasks)
+        const activeStatuses = ['Active', 'active', 'in_progress', 'pending'];
+        if (activeStatuses.includes(task.status) && task.isOverdue) score -= 15;
         
         return {
           ...task.toObject(),
@@ -275,16 +277,18 @@ router.put('/:id', async (req, res) => {
   try {
     const updates = req.body;
     
+    console.log('🔄 Task PUT - Updates received:', Object.keys(updates));
+    console.log('🔄 Task PUT - Task ID:', updates.id);
+    console.log('🔄 Task PUT - Status:', updates.status);
+    console.log('🔄 Task PUT - Workstream:', updates.workstream);
+    
     // Prevent updating certain fields
     delete updates.id;
     delete updates.createdAt;
     delete updates.createdBy;
     
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      updates,
-      { new: true, runValidators: true }
-    );
+    // Use findById and save to properly handle all field updates
+    const task = await Task.findById(req.params.id);
 
     if (!task) {
       return res.status(404).json({
@@ -293,14 +297,33 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+    // Apply updates to the document
+    Object.keys(updates).forEach(key => {
+      task.set(key, updates[key]);
+    });
+
+    // Save the document
+    await task.save({ runValidators: true });
+
+    console.log('✅ Task updated successfully:', {
+      id: task._id,
+      taskId: task.id,
+      name: task.name,
+      status: task.status,
+      workstream: task.workstream
+    });
+
     res.json({
       success: true,
       message: 'Task updated successfully',
       data: task
     });
   } catch (error) {
+    console.error('❌ Task PUT Error:', error.message);
+    
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
+      console.error('❌ Validation errors:', messages);
       return res.status(400).json({
         success: false,
         message: 'Validation error',
@@ -477,10 +500,19 @@ router.get('/stats/overview', async (req, res) => {
           _id: null,
           totalTasks: { $sum: 1 },
           activeTasks: {
-            $sum: { $cond: [{ $eq: ['$status', 'Active'] }, 1, 0] }
+            $sum: { $cond: [{ $in: ['$status', ['Active', 'active', 'in_progress', 'pending']] }, 1, 0] }
           },
           draftTasks: {
-            $sum: { $cond: [{ $eq: ['$status', 'Draft'] }, 1, 0] }
+            $sum: { $cond: [{ $in: ['$status', ['Draft', 'draft']] }, 1, 0] }
+          },
+          completedTasks: {
+            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
+          },
+          failedTasks: {
+            $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] }
+          },
+          cancelledTasks: {
+            $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] }
           },
           archivedTasks: {
             $sum: { $cond: [{ $eq: ['$status', 'Archived'] }, 1, 0] }
@@ -490,7 +522,7 @@ router.get('/stats/overview', async (req, res) => {
               $cond: [
                 {
                   $and: [
-                    { $eq: ['$status', 'Active'] },
+                    { $in: ['$status', ['Active', 'active', 'in_progress', 'pending']] },
                     { $lt: ['$dueDate', new Date()] }
                   ]
                 },
@@ -613,7 +645,7 @@ router.get('/meta/tags', async (req, res) => {
 // GET all unique statuses
 router.get('/meta/statuses', async (req, res) => {
   try {
-    const statuses = ['Active', 'Draft', 'Archived'];
+    const statuses = ['draft', 'pending', 'in_progress', 'active', 'completed', 'cancelled', 'failed', 'on_hold', 'Active', 'Draft', 'Archived'];
     res.json({
       success: true,
       data: statuses

@@ -276,16 +276,23 @@ router.put('/:id', async (req, res) => {
     
     // Prevent updating certain fields
     delete updates.requestId;
-    delete updates.status;
+    // Note: status and related fields are now allowed to be updated via PUT
+    
+    // Extract status-related fields for special handling
+    const statusUpdate = updates.status;
+    const approvedBy = updates.approvedBy;
+    const rejectionReason = updates.rejectionReason;
+    const referbackReason = updates.referbackReason;
+    const notes = updates.notes;
+    
+    // Remove status-related fields from regular updates (will be handled separately)
     delete updates.submittedAt;
-    delete updates.approvedBy;
     delete updates.approvedAt;
-    delete updates.rejectionReason;
-    delete updates.completedAt;
     
     console.log("🔄 Data Request PUT - Updates:", Object.keys(updates));
     console.log("🔄 Data Request PUT - requestType:", updates.requestType);
     console.log("🔄 Data Request PUT - dataFormat:", updates.dataFormat);
+    console.log("🔄 Data Request PUT - status:", statusUpdate);
     
     // Validate requestItems if being updated
     if (updates.requestItems) {
@@ -331,8 +338,66 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Apply updates to the document
+    // Handle status update with proper logic
+    if (statusUpdate !== undefined) {
+      dataRequest.status = statusUpdate;
+      
+      // Handle status-specific updates
+      if (statusUpdate === 'submitted') {
+        dataRequest.submittedAt = new Date();
+      } else if (statusUpdate === 'approved') {
+        if (!approvedBy) {
+          return res.status(400).json({
+            success: false,
+            message: 'Approved By is required when approving a request'
+          });
+        }
+        dataRequest.approvedBy = approvedBy;
+        dataRequest.approvedAt = new Date();
+      } else if (statusUpdate === 'rejected' || statusUpdate === 'dc_rejected') {
+        if (!rejectionReason) {
+          return res.status(400).json({
+            success: false,
+            message: 'Rejection reason is required when rejecting a request'
+          });
+        }
+        dataRequest.rejectionReason = rejectionReason;
+      } else if (statusUpdate === 'dc_referback') {
+        if (!referbackReason) {
+          return res.status(400).json({
+            success: false,
+            message: 'Referback reason is required when sending a request back for rework'
+          });
+        }
+        dataRequest.referbackReason = referbackReason;
+      } else if (statusUpdate === 'completed') {
+        dataRequest.completedAt = new Date();
+      }
+    }
+    
+    // Handle notes update if provided
+    if (notes !== undefined) {
+      dataRequest.notes = notes;
+    }
+    
+    // Handle approvedBy, rejectionReason, and referbackReason if provided separately (not via status update)
+    if (approvedBy !== undefined && statusUpdate !== 'approved') {
+      dataRequest.approvedBy = approvedBy;
+    }
+    if (rejectionReason !== undefined && statusUpdate !== 'rejected' && statusUpdate !== 'dc_rejected') {
+      dataRequest.rejectionReason = rejectionReason;
+    }
+    if (referbackReason !== undefined && statusUpdate !== 'dc_referback') {
+      dataRequest.referbackReason = referbackReason;
+    }
+
+    // Apply other updates to the document
     Object.keys(updates).forEach(key => {
+      // Skip status-related fields as they're handled above
+      if (key === 'status' || key === 'approvedBy' || key === 'rejectionReason' || key === 'referbackReason' || key === 'notes') {
+        return;
+      }
+      
       if (key === 'requestItems') {
         // Replace the entire requestItems array
         console.log(`📝 Updating requestItems array with ${updates[key].length} item(s)`);
@@ -377,6 +442,7 @@ router.put('/:id', async (req, res) => {
       id: dataRequest._id,
       requestId: dataRequest.requestId,
       requestType: dataRequest.requestType,
+      status: dataRequest.status,
       requestItems: dataRequest.requestItems ? dataRequest.requestItems.length : 0
     });
 
@@ -410,16 +476,23 @@ router.put('/by-request-id/:requestId', async (req, res) => {
     
     // Prevent updating certain fields
     delete updates.requestId;
-    delete updates.status;
+    // Note: status and related fields are now allowed to be updated via PUT
+    
+    // Extract status-related fields for special handling
+    const statusUpdate = updates.status;
+    const approvedBy = updates.approvedBy;
+    const rejectionReason = updates.rejectionReason;
+    const referbackReason = updates.referbackReason;
+    const notes = updates.notes;
+    
+    // Remove status-related fields from regular updates (will be handled separately)
     delete updates.submittedAt;
-    delete updates.approvedBy;
     delete updates.approvedAt;
-    delete updates.rejectionReason;
-    delete updates.completedAt;
     
     console.log("🔄 Data Request PUT by requestId - Updates:", Object.keys(updates));
     console.log("🔄 Data Request PUT by requestId - requestType:", updates.requestType);
     console.log("🔄 Data Request PUT by requestId - dataFormat:", updates.dataFormat);
+    console.log("🔄 Data Request PUT by requestId - status:", statusUpdate);
     
     // Fetch existing request first (needed for validation and update)
     const dataRequest = await DataRequest.findOne({ requestId: req.params.requestId });
@@ -465,8 +538,66 @@ router.put('/by-request-id/:requestId', async (req, res) => {
       }
     }
 
-    // Apply updates to the document
+    // Handle status update with proper logic
+    if (statusUpdate !== undefined) {
+      dataRequest.status = statusUpdate;
+      
+      // Handle status-specific updates
+      if (statusUpdate === 'submitted') {
+        dataRequest.submittedAt = new Date();
+      } else if (statusUpdate === 'approved') {
+        if (!approvedBy) {
+          return res.status(400).json({
+            success: false,
+            message: 'Approved By is required when approving a request'
+          });
+        }
+        dataRequest.approvedBy = approvedBy;
+        dataRequest.approvedAt = new Date();
+      } else if (statusUpdate === 'rejected' || statusUpdate === 'dc_rejected') {
+        if (!rejectionReason) {
+          return res.status(400).json({
+            success: false,
+            message: 'Rejection reason is required when rejecting a request'
+          });
+        }
+        dataRequest.rejectionReason = rejectionReason;
+      } else if (statusUpdate === 'dc_referback') {
+        if (!referbackReason) {
+          return res.status(400).json({
+            success: false,
+            message: 'Referback reason is required when sending a request back for rework'
+          });
+        }
+        dataRequest.referbackReason = referbackReason;
+      } else if (statusUpdate === 'completed') {
+        dataRequest.completedAt = new Date();
+      }
+    }
+    
+    // Handle notes update if provided
+    if (notes !== undefined) {
+      dataRequest.notes = notes;
+    }
+    
+    // Handle approvedBy, rejectionReason, and referbackReason if provided separately (not via status update)
+    if (approvedBy !== undefined && statusUpdate !== 'approved') {
+      dataRequest.approvedBy = approvedBy;
+    }
+    if (rejectionReason !== undefined && statusUpdate !== 'rejected' && statusUpdate !== 'dc_rejected') {
+      dataRequest.rejectionReason = rejectionReason;
+    }
+    if (referbackReason !== undefined && statusUpdate !== 'dc_referback') {
+      dataRequest.referbackReason = referbackReason;
+    }
+
+    // Apply other updates to the document
     Object.keys(updates).forEach(key => {
+      // Skip status-related fields as they're handled above
+      if (key === 'status' || key === 'approvedBy' || key === 'rejectionReason' || key === 'referbackReason' || key === 'notes') {
+        return;
+      }
+      
       if (key === 'requestItems') {
         // Replace the entire requestItems array
         console.log(`📝 Updating requestItems array with ${updates[key].length} item(s)`);
@@ -507,10 +638,11 @@ router.put('/by-request-id/:requestId', async (req, res) => {
     // Save the document to ensure all nested fields are persisted
     await dataRequest.save({ runValidators: true });
 
-    console.log('✅ Data Request updated successfully:', {
+    console.log('✅ Data Request updated successfully (by requestId):', {
       id: dataRequest._id,
       requestId: dataRequest.requestId,
       requestType: dataRequest.requestType,
+      status: dataRequest.status,
       requestItems: dataRequest.requestItems ? dataRequest.requestItems.length : 0
     });
 
@@ -540,7 +672,7 @@ router.put('/by-request-id/:requestId', async (req, res) => {
 // PATCH update data request status
 router.patch('/:id/status', async (req, res) => {
   try {
-    const { status, approvedBy, rejectionReason, notes } = req.body;
+    const { status, approvedBy, rejectionReason, referbackReason, notes } = req.body;
     
     if (!status) {
       return res.status(400).json({
@@ -572,7 +704,7 @@ router.patch('/:id/status', async (req, res) => {
       }
       dataRequest.approvedBy = approvedBy;
       dataRequest.approvedAt = new Date();
-    } else if (status === 'rejected') {
+    } else if (status === 'rejected' || status === 'dc_rejected') {
       if (!rejectionReason) {
         return res.status(400).json({
           success: false,
@@ -580,6 +712,14 @@ router.patch('/:id/status', async (req, res) => {
         });
       }
       dataRequest.rejectionReason = rejectionReason;
+    } else if (status === 'dc_referback') {
+      if (!referbackReason) {
+        return res.status(400).json({
+          success: false,
+          message: 'Referback reason is required when sending a request back for rework'
+        });
+      }
+      dataRequest.referbackReason = referbackReason;
     } else if (status === 'completed') {
       dataRequest.completedAt = new Date();
     }
