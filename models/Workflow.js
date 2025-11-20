@@ -42,7 +42,7 @@ const workflowSchema = new mongoose.Schema(
     description: { type: String, trim: true },
     status: {
       type: String,
-      enum: ["draft", "active", "inactive", "archived"],
+      enum: ["draft", "published", "active", "inactive", "archived"],
       default: "draft",
     },
     version: { type: String, default: "1.0.0" },
@@ -65,4 +65,5 @@ workflowSchema.index({ status: 1, workstream: 1 });
 const Workflow = mongoose.model("Workflow", workflowSchema);
 
 module.exports = Workflow;
+
 
