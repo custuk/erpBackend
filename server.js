@@ -152,6 +152,7 @@ app.use("/api/data-objects", require("./routes/dataObjects"));
 app.use("/api/forms", require("./routes/forms"));
 app.use("/api/business-rules", require("./routes/businessRules"));
 app.use("/api/module-configurations", require("./routes/moduleConfigurations"));
+app.use("/api/workflows", require("./routes/workflows"));
 app.use(
   "/api/customer-master-requests",
   require("./routes/customerMasterRequests")
